@@ -1,66 +1,76 @@
 package com.example.apppp2;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.location.Location;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
-import android.widget.ImageView;
 import android.os.Bundle;
 import android.widget.TextView;
-import android.widget.Toast;
+import android.util.Log;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
-
-import com.google.android.gms.maps.CameraUpdate;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.gson.JsonObject;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import android.content.Context;
+import android.util.Log;
+import android.widget.Toast;
+
+import okhttp3.OkHttpClient;
 
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
 
-    private RadioGroup rg;
     private RadioButton rb;
     private RadioButton rb2;
-    private ImageView img;
     private EditText editTextDate;
     private EditText editTextTime;
-    double lat;
-    double lon;
+    private TextView output1;
 
 
 
-    // [START_EXCLUDE]
-    // [START maps_marker_get_map_async]
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Retrieve the content view that renders the map.
         setContentView(R.layout.activity_main);
 
-        // Get the SupportMapFragment and request notification when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
         rb = (RadioButton) findViewById(R.id.radioButton1);
-        //rb.setOnCheckedChangeListener(radioButtonClickListener);
         rb2 = (RadioButton)findViewById(R.id.radioButton2);
-        //rb2.setOnCheckedChangeListener(onCheckedChanged);
-
 
         editTextDate = (EditText)findViewById(R.id.editTextDate);
         editTextTime = (EditText)findViewById(R.id.editTextTime);
+        output1 = (TextView) findViewById(R.id.output1);
+
 
         // Текущее время
         Date currentDate = new Date();
@@ -75,71 +85,62 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         editTextTime.setText(timeText);
 
 
+            String apikey="3449d87ceaf2391c2de38815fcc522f9";
+            String url="https://api.openweathermap.org/data/2.5/weather?q=Volgograd&appid=" + apikey;
+
+            RequestQueue queue = Volley.newRequestQueue(getApplicationContext());
+            JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null, new Response.Listener<JSONObject>() {
+                @Override
+                public void onResponse(JSONObject response) {
+                    try {
+                        JSONObject object = response.getJSONObject("main");
+                        String temp = object.getString("temp");
+                        output1.setText(temp);
+                    } catch (JSONException e) {
+                        Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                }
+            }, new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    Toast.makeText(MainActivity.this, error.toString(), Toast.LENGTH_SHORT).show();
+                }
+            });
+            queue.add(request);
+        }
 
 
-    }
-    // [END maps_marker_get_map_async]
-    // [END_EXCLUDE]
 
-    // [START_EXCLUDE silent]
-    /**
-     * Manipulates the map when it's available.
-     * The API invokes this callback when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user receives a prompt to install
-     * Play services inside the SupportMapFragment. The API invokes this method after the user has
-     * installed Google Play services and returned to the app.
-     */
-    // [END_EXCLUDE]
-
-
-
-
-
-
-    // [START maps_marker_on_map_ready_add_marker]
+    // Подключение карты с маркером
     @Override
     public void onMapReady(GoogleMap googleMap) {
 
-        lat = 48.68906521383257;
-        lon = 44.48623091158812;
-        LatLng volgograd = new LatLng(lat, lon);
+        // Начальные координаты при открытии приложения
+        LatLng volgograd = new LatLng(48.68906521383257, 44.48623091158812);
         googleMap.addMarker(new MarkerOptions()
                 .position(volgograd)
-                .title("Marker in Raboche_Krestianskaya"));
-        // [START_EXCLUDE silent]
+                .title("Raboche_Krestianskaya"));
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(volgograd, 15));
 
-
-
+        // Изменение положения карты при клике на RadioButton
         RadioGroup radioGroup = findViewById(R.id.radioGroup);
         radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
-
-
 
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
                 switch (checkedId) {
                     case R.id.radioButton1:
-                        lat = 48.68906521383257;
-                        lon = 44.48623091158812;
-                        LatLng volgograd = new LatLng(lat, lon);
+                        LatLng volgograd = new LatLng(48.68906521383257, 44.48623091158812);
                         googleMap.addMarker(new MarkerOptions()
                                 .position(volgograd)
-                                .title("Marker in Raboche_Krestianskaya"));
-                        // [START_EXCLUDE silent]
+                                .title("Raboche_Krestianskaya"));
                         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(volgograd, 15));
-                        // [END_EXCLUDE]
                         break;
                     case R.id.radioButton2:
-                        lat = 48.70908248480214;
-                        lon = 44.5278157336385;
-                        LatLng volgograd1 = new LatLng(lat, lon);
+                        LatLng volgograd1 = new LatLng(48.70908248480214, 44.5278157336385);
                         googleMap.addMarker(new MarkerOptions()
                                 .position(volgograd1)
-                                .title("Marker in Raboche_Krestianskaya"));
-                        // [START_EXCLUDE silent]
+                                .title("Sovetskaya"));
                         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(volgograd1, 15));
                     default:
                         break;
@@ -147,19 +148,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 
-
-        // [START_EXCLUDE silent]
-        // Add a marker in Sydney, Australia,
-        // and move the map's camera to the same location.
-        // [END_EXCLUDE]
-
-
-
-
     }
-
-
-
 
 
 
